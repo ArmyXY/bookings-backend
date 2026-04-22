@@ -1,18 +1,18 @@
 # Bookings Backend
 
-Backend API para gestión de reservas, construido con **NestJS**, **TypeORM** y **SQLite**. Actualmente permite **listar reservas**, **consultar una reserva por ID** y **crear nuevas reservas**, con validación mediante DTOs y documentación Swagger. [1][2]
+Backend API para gestión de reservas, construido con **NestJS**, **TypeORM** y **SQLite**. Actualmente permite **listar reservas**, **consultar una reserva por ID** y **crear nuevas reservas**, con validación mediante DTOs y documentación Swagger.
 
 ## Visión general
 
-Este repositorio contiene la parte backend del proyecto de gestión de reservas. La aplicación expone una API REST sencilla sobre reservas y utiliza una base de datos SQLite local, lo que facilita su puesta en marcha en entorno local sin necesidad de instalar un servidor de base de datos independiente. [2]
+Este repositorio contiene la parte backend del proyecto de gestión de reservas. La aplicación expone una API REST sencilla sobre reservas y utiliza una base de datos SQLite local, lo que facilita su puesta en marcha en entorno local sin necesidad de instalar un servidor de base de datos independiente.
 
 ## Stack técnico
 
-- **NestJS** como framework backend. [2]
-- **TypeORM** como capa ORM. [2]
-- **SQLite** como base de datos local en archivo. [2]
-- **Swagger** para explorar la API desde navegador. [2]
-- **class-validator** y `ValidationPipe` para validar las peticiones de entrada. [1]
+- **NestJS** como framework backend.
+- **TypeORM** como capa ORM.
+- **SQLite** como base de datos local en archivo.
+- **Swagger** para explorar la API desde navegador.
+- **class-validator** y `ValidationPipe` para validar las peticiones de entrada.
 
 ## Estructura principal
 
@@ -38,9 +38,9 @@ backend/
 
 La API expone un módulo `appointments` con tres endpoints principales:
 
-- `GET /appointments` → devuelve el listado de reservas ordenado por fecha y hora. [2]
-- `GET /appointments/:id` → devuelve una reserva concreta por ID. [2]
-- `POST /appointments` → crea una nueva reserva. [2]
+- `GET /appointments` → devuelve el listado de reservas ordenado por fecha y hora.
+- `GET /appointments/:id` → devuelve una reserva concreta por ID.
+- `POST /appointments` → crea una nueva reserva.
 
 La entidad `Appointment` guarda actualmente estos campos:
 
@@ -50,19 +50,19 @@ La entidad `Appointment` guarda actualmente estos campos:
 - `status`
 - `customerId`
 - `businessId`
-- `serviceName` [2]
+- `serviceName`
 
 El campo `status` puede tomar estos valores:
 
 - `pending`
 - `confirmed`
-- `paid` [2]
+- `paid` 
 
 ## Requisitos previos
 
 Antes de ejecutar el proyecto, asegúrate de tener instalado:
 
-- **Node.js 18 o superior**; el proyecto usa TypeScript y tooling moderno de NestJS. [1][2]
+- **Node.js 18 o superior**; el proyecto usa TypeScript y tooling moderno de NestJS.
 - **npm**
 - Git
 
@@ -98,7 +98,7 @@ Ejecuta:
 npm install
 ```
 
-Este comando instalará NestJS, TypeORM, SQLite, Swagger y el resto de dependencias definidas en `package.json`. [2]
+Este comando instalará NestJS, TypeORM, SQLite, Swagger y el resto de dependencias definidas en `package.json`.
 
 ## Cómo ejecutar el backend
 
@@ -108,7 +108,7 @@ Este comando instalará NestJS, TypeORM, SQLite, Swagger y el resto de dependenc
 npm run start:dev
 ```
 
-Este modo recompila automáticamente al guardar cambios. [2]
+Este modo recompila automáticamente al guardar cambios.
 
 ### Otros scripts útiles
 
@@ -126,7 +126,7 @@ npm run test:e2e
 Cuando el backend esté levantado, normalmente estará disponible en:
 
 - API: `http://localhost:3000`
-- Swagger: `http://localhost:3000/api` [2]
+- Swagger: `http://localhost:3000/api`
 
 ## Base de datos
 
@@ -136,11 +136,11 @@ La base de datos es un archivo SQLite local:
 backend/data/database.sqlite
 ```
 
-TypeORM está configurado con `type: 'sqlite'`, `database: 'data/database.sqlite'`, `autoLoadEntities: true` y `synchronize: true`, por lo que en desarrollo el esquema se genera automáticamente a partir de las entidades del proyecto. [2]
+TypeORM está configurado con `type: 'sqlite'`, `database: 'data/database.sqlite'`, `autoLoadEntities: true` y `synchronize: true`, por lo que en desarrollo el esquema se genera automáticamente a partir de las entidades del proyecto.
 
 ### ¿Hay que levantar la base de datos manualmente?
 
-No. SQLite funciona como archivo local, así que **no necesitas arrancar un servidor de base de datos** como MySQL o PostgreSQL. Si el archivo no existe, TypeORM lo creará al levantar la app. [2]
+No. SQLite funciona como archivo local, así que **no necesitas arrancar un servidor de base de datos** como MySQL o PostgreSQL. Si el archivo no existe, TypeORM lo creará al levantar la app.
 
 ### Cómo reiniciar la base de datos
 
@@ -150,7 +150,7 @@ Si quieres empezar desde cero:
 2. Borra el archivo `data/database.sqlite`.
 3. Vuelve a ejecutar `npm run start:dev`.
 
-Con `synchronize: true`, Nest y TypeORM recrearán la estructura a partir de la entidad actual. [2]
+Con `synchronize: true`, Nest y TypeORM recrearán la estructura a partir de la entidad actual.
 
 ## Cómo ver los datos de la base de datos
 
@@ -164,7 +164,7 @@ Abre:
 http://localhost:3000/api
 ```
 
-Desde ahí puedes probar `GET /appointments` y `POST /appointments` directamente desde el navegador. Swagger genera la documentación a partir del código y de los decoradores de Nest. [2]
+Desde ahí puedes probar `GET /appointments` y `POST /appointments` directamente desde el navegador. Swagger genera la documentación a partir del código y de los decoradores de Nest.
 
 ### Opción 2: usar curl
 
@@ -204,13 +204,13 @@ El backend usa un `ValidationPipe` global con estas opciones:
 
 - `whitelist: true`
 - `transform: true`
-- `forbidNonWhitelisted: true` [1]
+- `forbidNonWhitelisted: true`
 
 Esto significa:
 
 - solo se aceptan los campos definidos en el DTO
 - se transforman tipos cuando es posible
-- si llega un campo no permitido, la petición falla [1]
+- si llega un campo no permitido, la petición falla
 
 El DTO `CreateAppointmentDto` exige:
 
@@ -219,11 +219,11 @@ El DTO `CreateAppointmentDto` exige:
 - `status` como enum válido
 - `customerId` como entero
 - `businessId` como entero
-- `serviceName` como string [2]
+- `serviceName` como string
 
 ## CORS y conexión con el frontend
 
-Si el frontend se ejecuta en otro puerto, por ejemplo `http://localhost:3001`, el backend debe permitir peticiones CORS mediante `app.enableCors(...)` en `main.ts`. NestJS ofrece esta configuración directamente sobre la aplicación. [1]
+Si el frontend se ejecuta en otro puerto, por ejemplo `http://localhost:3001`, el backend debe permitir peticiones CORS mediante `app.enableCors(...)` en `main.ts`. NestJS ofrece esta configuración directamente sobre la aplicación.
 
 Ejemplo recomendado:
 
@@ -239,7 +239,7 @@ app.enableCors({
 2. Abre Swagger en `http://localhost:3000/api`.
 3. Comprueba que `GET /appointments` responde.
 4. Crea una reserva con `POST /appointments`.
-5. Vuelve a llamar a `GET /appointments` para verificar que aparece en la lista. [2]
+5. Vuelve a llamar a `GET /appointments` para verificar que aparece en la lista.
 
 ## Problemas frecuentes
 
@@ -249,7 +249,7 @@ Revisa:
 
 - que `npm install` haya terminado correctamente
 - que estás dentro de `bookings-backend-Base/backend`
-- que tu versión de Node es suficientemente reciente [2]
+- que tu versión de Node es suficientemente reciente
 
 ### Error al crear reservas
 
@@ -266,11 +266,11 @@ Revisa que el body enviado cumpla el DTO:
 }
 ```
 
-Si `status` no coincide con el enum o si `customerId` y `businessId` no son enteros, la validación devolverá error. [1][2]
+Si `status` no coincide con el enum o si `customerId` y `businessId` no son enteros, la validación devolverá error.
 
 ### No veo datos en la base
 
-Si `GET /appointments` devuelve `[]`, simplemente significa que todavía no hay registros guardados. Crea una reserva con Swagger o curl y vuelve a consultar. [2]
+Si `GET /appointments` devuelve `[]`, simplemente significa que todavía no hay registros guardados. Crea una reserva con Swagger o curl y vuelve a consultar.
 
 ## Scripts disponibles
 
@@ -293,4 +293,4 @@ Si `GET /appointments` devuelve `[]`, simplemente significa que todavía no hay 
 
 ## Estado actual del proyecto
 
-Este backend proporciona una API sencilla y directa para trabajar con reservas, con persistencia local en SQLite, validación de entradas y documentación accesible desde Swagger. [1][2]
+Este backend proporciona una API sencilla y directa para trabajar con reservas, con persistencia local en SQLite, validación de entradas y documentación accesible desde Swagger.

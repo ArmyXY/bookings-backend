@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Appointment } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
@@ -24,5 +25,20 @@ export class AppointmentsService {
   create(createAppointmentDto: CreateAppointmentDto) {
     const appointment = this.appointmentsRepository.create(createAppointmentDto);
     return this.appointmentsRepository.save(appointment);
+  }
+
+  async update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
+    const appointment = await this.appointmentsRepository.findOneBy({ id });
+
+    if (!appointment) {
+      throw new NotFoundException(`No existe la reserva con id ${id}`);
+    }
+
+    const updatedAppointment = this.appointmentsRepository.merge(
+      appointment,
+      updateAppointmentDto,
+    );
+
+    return this.appointmentsRepository.save(updatedAppointment);
   }
 }

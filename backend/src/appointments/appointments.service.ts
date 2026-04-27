@@ -41,4 +41,16 @@ export class AppointmentsService {
 
     return this.appointmentsRepository.save(updatedAppointment);
   }
+
+  async remove(id: number) {
+    const appointment = await this.appointmentsRepository.findOneBy({ id });
+
+    if (!appointment) {
+      throw new NotFoundException(`No existe la reserva con id ${id}`);
+    }
+
+    await this.appointmentsRepository.remove(appointment);
+
+    return { message: `Reserva ${id} eliminada correctamente` };
+  }
 }

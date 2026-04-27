@@ -1,13 +1,18 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -42,5 +47,11 @@ export class AppointmentsController {
     @Body() updateAppointmentDto: UpdateAppointmentDto,
   ) {
     return this.appointmentsService.update(id, updateAppointmentDto);
+  }
+
+  @Delete(':id')
+  @ApiOkResponse({ description: 'Reserva eliminada' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.appointmentsService.remove(id);
   }
 }

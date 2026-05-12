@@ -14,12 +14,16 @@ export class AppointmentsService {
 
   findAll() {
     return this.appointmentsRepository.find({
+      relations: ['customer'],
       order: { date: 'ASC', time: 'ASC' },
     });
   }
 
   findOne(id: number) {
-    return this.appointmentsRepository.findOneBy({ id });
+    return this.appointmentsRepository.findOne({
+      where: { id },
+      relations: ['customer'],
+    });
   }
 
   create(createAppointmentDto: CreateAppointmentDto) {

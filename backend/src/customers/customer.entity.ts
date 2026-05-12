@@ -15,7 +15,7 @@ export class Customer {
   @Column({ nullable: true })
   phone: string;
 
-  @OneToMany(() => Appointment, (appointment) => appointment.customerId)
+  @OneToMany(() => Appointment, (appointment) => appointment.customer)
   appointments: Appointment[];
 
   @CreateDateColumn()

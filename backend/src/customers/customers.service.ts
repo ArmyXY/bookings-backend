@@ -22,7 +22,7 @@ export class CustomersService {
       relations: ['appointments'],
     });
     if (!customer) {
-      throw new NotFoundException(`Customer with ID ${id} not found`);
+      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
     }
     return customer;
   }

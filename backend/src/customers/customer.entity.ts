@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Appointment } from '../appointments/appointment.entity';
+import { Payment } from '../payments/payment.entity';
 
 @Entity()
 export class Customer {
@@ -22,6 +23,9 @@ export class Customer {
 
   @OneToMany(() => Appointment, (appointment) => appointment.customer)
   appointments: Appointment[];
+
+  @OneToMany(() => Payment, (payment) => payment.customer)
+  payments: Payment[];
 
   @ApiProperty()
   @CreateDateColumn()

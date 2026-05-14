@@ -16,13 +16,13 @@ export class PaymentsService {
   ) {}
 
   async findAll(): Promise<Payment[]> {
-    return this.paymentRepository.find({ relations: ['appointment'] });
+    return this.paymentRepository.find({ relations: ['appointment', 'business', 'customer'] });
   }
 
   async findOne(id: number): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id },
-      relations: ['appointment'],
+      relations: ['appointment', 'business', 'customer'],
     });
     if (!payment) {
       throw new NotFoundException(`Pago con ID ${id} no encontrado`);
@@ -36,7 +36,11 @@ export class PaymentsService {
       throw new NotFoundException(`Reserva con ID ${createPaymentDto.appointmentId} no encontrada`);
     }
 
-    const payment = this.paymentRepository.create(createPaymentDto);
+    const payment = this.paymentRepository.create({
+      ...createPaymentDto,
+      businessId: appointment.businessId,
+      customerId: appointment.customerId,
+    });
     const savedPayment = await this.paymentRepository.save(payment);
 
     // Si el pago es exitoso, actualizamos el estado de la reserva

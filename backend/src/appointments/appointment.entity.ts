@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, JoinColum
 import { ApiProperty } from '@nestjs/swagger';
 import { Customer } from '../customers/customer.entity';
 import { Payment } from '../payments/payment.entity';
+import { Business } from '../businesses/business.entity';
 
 export enum AppointmentStatus {
   PENDING = 'pending',
@@ -44,6 +45,10 @@ export class Appointment {
   @ApiProperty({ example: 1 })
   @Column()
   businessId: number;
+
+  @ManyToOne(() => Business, (business) => business.appointments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'businessId' })
+  business: Business;
 
   @ApiProperty({ example: 'Corte de pelo' })
   @Column()

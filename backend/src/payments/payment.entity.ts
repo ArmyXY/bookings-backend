@@ -1,6 +1,8 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Appointment } from '../appointments/appointment.entity';
+import { Business } from '../businesses/business.entity';
+import { Customer } from '../customers/customer.entity';
 
 export enum PaymentStatus {
   PENDING = 'pending',
@@ -43,9 +45,25 @@ export class Payment {
   @Column()
   appointmentId: number;
 
-  @ManyToOne(() => Appointment)
+  @ManyToOne(() => Appointment, (appointment) => appointment.payments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'appointmentId' })
   appointment: Appointment;
+
+  @ApiProperty({ example: 1 })
+  @Column({ nullable: true })
+  businessId: number;
+
+  @ManyToOne(() => Business, (business) => business.payments, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'businessId' })
+  business: Business;
+
+  @ApiProperty({ example: 1 })
+  @Column({ nullable: true })
+  customerId: number;
+
+  @ManyToOne(() => Customer, (customer) => customer.payments, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'customerId' })
+  customer: Customer;
 
   @ApiProperty()
   @CreateDateColumn()

@@ -5,16 +5,15 @@ import { Business } from '../businesses/business.entity';
 import { Customer } from '../customers/customer.entity';
 
 export enum PaymentStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  REFUNDED = 'refunded',
+  PENDING = 'pendiente',
+  COMPLETED = 'pagado',
+  REFUNDED = 'devolución',
 }
 
 export enum PaymentMethod {
-  CASH = 'cash',
-  CARD = 'card',
-  TRANSFER = 'transfer',
+  CASH = 'efectivo',
+  CARD = 'tarjeta',
+  TRANSFER = 'transferencia',
 }
 
 @Entity()

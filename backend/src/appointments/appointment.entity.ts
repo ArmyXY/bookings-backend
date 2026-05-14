@@ -5,9 +5,10 @@ import { Payment } from '../payments/payment.entity';
 import { Business } from '../businesses/business.entity';
 
 export enum AppointmentStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  PAID = 'paid',
+  PENDING = 'pendiente',
+  CONFIRMED = 'confirmado',
+  PAID = 'completado',
+  CANCELLED = 'cancelado'
 }
 
 @Entity()

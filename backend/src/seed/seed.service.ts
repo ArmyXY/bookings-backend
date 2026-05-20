@@ -5,6 +5,8 @@ import { Business } from '../businesses/business.entity';
 import { Customer } from '../customers/customer.entity';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
 import { Payment, PaymentStatus, PaymentMethod } from '../payments/payment.entity';
+import { User } from '../users/user.entity';
+import { hashPassword } from '../auth/password.utils';
 
 @Injectable()
 export class SeedService {
@@ -17,6 +19,8 @@ export class SeedService {
     private readonly appointmentRepo: Repository<Appointment>,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) { }
 
   async seed() {
@@ -26,12 +30,14 @@ export class SeedService {
       await this.appointmentRepo.query('DELETE FROM appointment');
       await this.customerRepo.query('DELETE FROM customer');
       await this.businessRepo.query('DELETE FROM businesses');
+      await this.userRepo.query('DELETE FROM users');
 
       // Resetear secuencias de ID en SQLite
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='payment'");
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='appointment'");
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='customer'");
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='businesses'");
+      await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='users'");
 
       // 2. Crear Negocios
       const businesses = await this.businessRepo.save([
@@ -89,6 +95,22 @@ export class SeedService {
         { name: 'Carlos Ruiz', email: 'carlos@mail.com', phone: '600555666' },
         { name: 'Lucía Fernández', email: 'lucia@mail.com', phone: '600777888' },
         { name: 'Elena Martínez', email: 'elena@mail.com', phone: '600999000' },
+      ]);
+
+      // 3.1. Crear Usuarios para futuro login
+      await this.userRepo.save([
+        {
+          name: 'Cliente Demo',
+          email: 'cliente@demo.com',
+          passwordHash: await hashPassword('cliente123'),
+          isClient: true,
+        },
+        {
+          name: 'Usuario Demo',
+          email: 'usuario@demo.com',
+          passwordHash: await hashPassword('usuario123'),
+          isClient: false,
+        },
       ]);
 
       // 4. Crear Reservas (Relacionadas con Negocios y Clientes)

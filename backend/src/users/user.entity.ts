@@ -16,7 +16,7 @@ export class User {
   email: string;
 
   @ApiHideProperty()
-  @Column({ nullable: true, select: false })
+  @Column({ type: 'text', nullable: true, select: false })
   passwordHash: string | null;
 
   @ApiProperty({

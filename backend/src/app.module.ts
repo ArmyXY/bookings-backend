@@ -6,6 +6,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { SeedModule } from './seed/seed.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { SeedModule } from './seed/seed.module';
     DashboardModule,
     BusinessesModule,
     SeedModule,
+    UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

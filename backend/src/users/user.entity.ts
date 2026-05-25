@@ -1,6 +1,12 @@
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
+export enum UserRole {
+  CLIENT = 'client',
+  INTERNAL = 'internal',
+  BUSINESS = 'business',
+}
+
 @Entity('users')
 export class User {
   @ApiProperty({ example: 1 })
@@ -25,6 +31,14 @@ export class User {
   })
   @Column({ default: true })
   isClient: boolean;
+
+  @ApiProperty({ enum: UserRole, example: UserRole.CLIENT })
+  @Column({ type: 'text', default: UserRole.CLIENT })
+  role: UserRole;
+
+  @ApiProperty({ example: 1, required: false })
+  @Column({ type: 'integer', nullable: true })
+  businessId: number | null;
 
   @ApiProperty()
   @CreateDateColumn()

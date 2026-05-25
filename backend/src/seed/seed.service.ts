@@ -5,7 +5,7 @@ import { Business } from '../businesses/business.entity';
 import { Customer } from '../customers/customer.entity';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
 import { Payment, PaymentStatus, PaymentMethod } from '../payments/payment.entity';
-import { User } from '../users/user.entity';
+import { User, UserRole } from '../users/user.entity';
 import { hashPassword } from '../auth/password.utils';
 
 @Injectable()
@@ -104,12 +104,22 @@ export class SeedService {
           email: 'cliente@demo.com',
           passwordHash: await hashPassword('cliente123'),
           isClient: true,
+          role: UserRole.CLIENT,
         },
         {
           name: 'Usuario Demo',
           email: 'usuario@demo.com',
           passwordHash: await hashPassword('usuario123'),
           isClient: false,
+          role: UserRole.INTERNAL,
+        },
+        {
+          name: 'Peluqueria Estilo',
+          email: 'peluqueria@demo.com',
+          passwordHash: await hashPassword('peluqueria123'),
+          isClient: false,
+          role: UserRole.BUSINESS,
+          businessId: businesses[0].id,
         },
       ]);
 

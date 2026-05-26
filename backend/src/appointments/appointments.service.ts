@@ -5,18 +5,21 @@ import { Appointment } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { BusinessesService } from '../businesses/businesses.service';
+import { Payment, PaymentStatus } from '../payments/payment.entity';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepository: Repository<Appointment>,
+    @InjectRepository(Payment)
+    private readonly paymentsRepository: Repository<Payment>,
     private readonly businessesService: BusinessesService,
   ) {}
 
   findAll() {
     return this.appointmentsRepository.find({
-      relations: ['customer', 'business'],
+      relations: ['customer', 'business', 'payments'],
       order: { date: 'ASC', time: 'ASC' },
     });
   }
@@ -24,7 +27,7 @@ export class AppointmentsService {
   findOne(id: number) {
     return this.appointmentsRepository.findOne({
       where: { id },
-      relations: ['customer', 'business'],
+      relations: ['customer', 'business', 'payments'],
     });
   }
 
@@ -38,8 +41,23 @@ export class AppointmentsService {
       );
     }
 
-    const appointment = this.appointmentsRepository.create(createAppointmentDto);
-    return this.appointmentsRepository.save(appointment);
+    const { paymentMethod, ...appointmentDto } = createAppointmentDto;
+    const appointment = this.appointmentsRepository.create(appointmentDto);
+    const savedAppointment = await this.appointmentsRepository.save(appointment);
+
+    if (paymentMethod) {
+      const payment = this.paymentsRepository.create({
+        amount: 0,
+        status: PaymentStatus.PENDING,
+        method: paymentMethod,
+        appointmentId: savedAppointment.id,
+        businessId: savedAppointment.businessId,
+        customerId: savedAppointment.customerId,
+      });
+      await this.paymentsRepository.save(payment);
+    }
+
+    return this.findOne(savedAppointment.id);
   }
 
   async update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
@@ -62,9 +80,10 @@ export class AppointmentsService {
       }
     }
 
+    const { paymentMethod: _paymentMethod, ...appointmentDto } = updateAppointmentDto;
     const updatedAppointment = this.appointmentsRepository.merge(
       appointment,
-      updateAppointmentDto,
+      appointmentDto,
     );
 
     return this.appointmentsRepository.save(updatedAppointment);

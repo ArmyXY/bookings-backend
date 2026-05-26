@@ -9,6 +9,8 @@ type TokenPayload = {
   sub: number;
   email: string;
   isClient: boolean;
+  role: string;
+  businessId: number | null;
   exp: number;
 };
 
@@ -57,6 +59,8 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       isClient: user.isClient,
+      role: user.role,
+      businessId: user.businessId,
       exp: Math.floor(Date.now() / 1000) + this.tokenTtlSeconds,
     };
 

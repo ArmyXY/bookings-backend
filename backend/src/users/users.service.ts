@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { hashPassword } from '../auth/password.utils';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './user.entity';
+import { User, UserRole } from './user.entity';
 
 export type PublicUser = Omit<User, 'passwordHash'>;
 
@@ -18,6 +18,14 @@ export class UsersService {
   private toPublicUser(user: User): PublicUser {
     const { passwordHash, ...publicUser } = user;
     return publicUser;
+  }
+
+  private assertValidRole(role?: UserRole | string | null) {
+    if (role && !Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException(
+        `Rol no valido. Usa uno de: ${Object.values(UserRole).join(', ')}`,
+      );
+    }
   }
 
   async findAll(): Promise<PublicUser[]> {
@@ -46,6 +54,8 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<PublicUser> {
+    this.assertValidRole(createUserDto.role);
+
     const { password, ...userData } = createUserDto;
     const user = this.userRepository.create({
       ...userData,
@@ -56,6 +66,8 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
+    this.assertValidRole(updateUserDto.role);
+
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);

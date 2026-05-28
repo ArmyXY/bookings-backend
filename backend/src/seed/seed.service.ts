@@ -97,7 +97,7 @@ export class SeedService {
         { name: 'Elena Martínez', email: 'elena@mail.com', phone: '600999000' },
       ]);
 
-      // 3.1. Crear Usuarios para futuro login
+      // 3.1. Crear Usuarios para futuro login con nuevos roles
       await this.userRepo.save([
         {
           name: 'Cliente Demo',
@@ -107,16 +107,16 @@ export class SeedService {
           role: UserRole.CLIENT,
         },
         {
-          name: 'Usuario Demo',
-          email: 'usuario@demo.com',
-          passwordHash: await hashPassword('usuario123'),
+          name: 'Administrador Demo',
+          email: 'admin@demo.com',
+          passwordHash: await hashPassword('admin123'),
           isClient: false,
-          role: UserRole.INTERNAL,
+          role: UserRole.ADMIN,
         },
         {
-          name: 'Peluqueria Estilo',
-          email: 'peluqueria@demo.com',
-          passwordHash: await hashPassword('peluqueria123'),
+          name: 'Business Peluqueria Estilo',
+          email: 'manager@demo.com',
+          passwordHash: await hashPassword('manager123'),
           isClient: false,
           role: UserRole.BUSINESS,
           businessId: businesses[0].id,

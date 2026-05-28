@@ -15,4 +15,9 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @ApiProperty({ example: 'password123', required: false })
+  @IsString()
+  @IsOptional()
+  password?: string;
 }

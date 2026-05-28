@@ -35,4 +35,9 @@ export class CreateUserDto {
   @IsInt()
   @IsOptional()
   businessId?: number;
+
+  @ApiProperty({ example: '+34 600 000 000', required: false })
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Business } from './business.entity';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
+import { User, UserRole } from '../users/user.entity';
+
+type AuthenticatedUser = Pick<User, 'role' | 'businessId'>;
 
 @Injectable()
 export class BusinessesService {
@@ -29,7 +32,11 @@ export class BusinessesService {
     return this.businessRepository.save(business);
   }
 
-  async update(id: number, updateBusinessDto: UpdateBusinessDto): Promise<Business> {
+  async update(id: number, updateBusinessDto: UpdateBusinessDto, user?: AuthenticatedUser): Promise<Business> {
+    if (user?.role === UserRole.BUSINESS && user.businessId !== id) {
+      throw new ForbiddenException('No puedes modificar otro negocio');
+    }
+
     const business = await this.findOne(id);
     Object.assign(business, updateBusinessDto);
     return this.businessRepository.save(business);

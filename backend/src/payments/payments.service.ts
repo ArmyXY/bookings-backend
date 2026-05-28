@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
+import { User, UserRole } from '../users/user.entity';
+
+type AuthenticatedUser = Pick<User, 'role' | 'email' | 'businessId'>;
 
 @Injectable()
 export class PaymentsService {
@@ -15,11 +18,21 @@ export class PaymentsService {
     private readonly appointmentRepository: Repository<Appointment>,
   ) {}
 
-  async findAll(): Promise<Payment[]> {
-    return this.paymentRepository.find({ relations: ['appointment', 'business', 'customer'] });
+  async findAll(user: AuthenticatedUser): Promise<Payment[]> {
+    const where =
+      user.role === UserRole.BUSINESS
+        ? { businessId: user.businessId ?? -1 }
+        : user.role === UserRole.CLIENT
+          ? { customer: { email: user.email } }
+          : {};
+
+    return this.paymentRepository.find({
+      where,
+      relations: ['appointment', 'business', 'customer'],
+    });
   }
 
-  async findOne(id: number): Promise<Payment> {
+  async findOne(id: number, user?: AuthenticatedUser): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id },
       relations: ['appointment', 'business', 'customer'],
@@ -27,14 +40,23 @@ export class PaymentsService {
     if (!payment) {
       throw new NotFoundException(`Pago con ID ${id} no encontrado`);
     }
+
+    if (user) {
+      this.assertCanAccessPayment(payment, user);
+    }
+
     return payment;
   }
 
-  async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const appointment = await this.appointmentRepository.findOneBy({ id: createPaymentDto.appointmentId });
+  async create(createPaymentDto: CreatePaymentDto, user: AuthenticatedUser): Promise<Payment> {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id: createPaymentDto.appointmentId },
+      relations: ['customer'],
+    });
     if (!appointment) {
       throw new NotFoundException(`Reserva con ID ${createPaymentDto.appointmentId} no encontrada`);
     }
+    this.assertCanAccessAppointment(appointment, user);
 
     const payment = this.paymentRepository.create({
       ...createPaymentDto,
@@ -52,8 +74,8 @@ export class PaymentsService {
     return savedPayment;
   }
 
-  async update(id: number, updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
-    const payment = await this.findOne(id);
+  async update(id: number, updatePaymentDto: UpdatePaymentDto, user: AuthenticatedUser): Promise<Payment> {
+    const payment = await this.findOne(id, user);
     const oldStatus = payment.status;
     
     this.paymentRepository.merge(payment, updatePaymentDto);
@@ -71,8 +93,28 @@ export class PaymentsService {
     return updatedPayment;
   }
 
-  async remove(id: number): Promise<void> {
-    const payment = await this.findOne(id);
+  async remove(id: number, user: AuthenticatedUser): Promise<void> {
+    const payment = await this.findOne(id, user);
     await this.paymentRepository.remove(payment);
+  }
+
+  private assertCanAccessPayment(payment: Payment, user: AuthenticatedUser) {
+    if (user.role === UserRole.ADMIN) return;
+
+    if (user.role === UserRole.BUSINESS && payment.businessId === user.businessId) return;
+
+    if (user.role === UserRole.CLIENT && payment.customer?.email === user.email) return;
+
+    throw new ForbiddenException('No tienes permisos sobre este pago');
+  }
+
+  private assertCanAccessAppointment(appointment: Appointment, user: AuthenticatedUser) {
+    if (user.role === UserRole.ADMIN) return;
+
+    if (user.role === UserRole.BUSINESS && appointment.businessId === user.businessId) return;
+
+    if (user.role === UserRole.CLIENT && appointment.customer?.email === user.email) return;
+
+    throw new ForbiddenException('No tienes permisos sobre la reserva asociada');
   }
 }

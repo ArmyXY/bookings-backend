@@ -2,9 +2,9 @@ import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 export enum UserRole {
-  CLIENT = 'client',
-  INTERNAL = 'internal',
+  ADMIN = 'admin',
   BUSINESS = 'business',
+  CLIENT = 'client',
 }
 
 @Entity('users')

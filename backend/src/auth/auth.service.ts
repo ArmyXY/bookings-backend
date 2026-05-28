@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserRole } from '../users/user.entity';
 import { PublicUser, UsersService } from '../users/users.service';
+import { CustomersService } from '../customers/customers.service';
 import { LoginDto } from './dto/login.dto';
 import { verifyPassword } from './password.utils';
 
@@ -15,11 +16,25 @@ type AuthResponse = {
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly customersService: CustomersService,
     private readonly jwtService: JwtService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<AuthResponse> {
     const user = await this.usersService.create(createUserDto);
+    
+    if (user.role === UserRole.CLIENT) {
+      // create a customer profile
+      await this.customersService.create(
+        {
+          name: user.name,
+          email: user.email,
+          phone: createUserDto.phone,
+        },
+        user as any // passing user to satisfy AuthenticatedUser signature
+      );
+    }
+
     return {
       accessToken: this.signAccessToken(user),
       user,

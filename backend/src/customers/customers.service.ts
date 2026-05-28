@@ -5,6 +5,7 @@ import { Customer } from './customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { User, UserRole } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
 
 type AuthenticatedUser = Pick<User, 'role' | 'email' | 'businessId'>;
 
@@ -13,6 +14,7 @@ export class CustomersService {
   constructor(
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    private readonly usersService: UsersService,
   ) {}
 
   async findAll(user: AuthenticatedUser): Promise<Customer[]> {
@@ -48,6 +50,16 @@ export class CustomersService {
   async create(createCustomerDto: CreateCustomerDto, user: AuthenticatedUser): Promise<Customer> {
     if (user.role === UserRole.CLIENT && createCustomerDto.email !== user.email) {
       throw new ForbiddenException('No puedes crear un perfil para otro cliente');
+    }
+
+    if (createCustomerDto.password) {
+      // Create a user so the client can log in
+      await this.usersService.create({
+        name: createCustomerDto.name,
+        email: createCustomerDto.email,
+        password: createCustomerDto.password,
+        role: UserRole.CLIENT,
+      });
     }
 
     const customer = this.customerRepository.create(createCustomerDto);

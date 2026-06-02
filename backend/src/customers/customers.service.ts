@@ -52,12 +52,14 @@ export class CustomersService {
       throw new ForbiddenException('No puedes crear un perfil para otro cliente');
     }
 
-    if (createCustomerDto.password) {
-      // Create a user so the client can log in
+    // Check if the user already exists by email
+    const existingUser = await this.usersService.findByEmail(createCustomerDto.email);
+    if (!existingUser) {
+      // Create user so the client can log in
       await this.usersService.create({
         name: createCustomerDto.name,
         email: createCustomerDto.email,
-        password: createCustomerDto.password,
+        password: createCustomerDto.password || 'cliente123',
         role: UserRole.CLIENT,
       });
     }
@@ -68,18 +70,38 @@ export class CustomersService {
 
   async update(id: number, updateCustomerDto: UpdateCustomerDto, user: AuthenticatedUser): Promise<Customer> {
     const customer = await this.findOne(id, user);
+    const oldEmail = customer.email;
 
     if (user.role === UserRole.CLIENT && updateCustomerDto.email && updateCustomerDto.email !== user.email) {
       throw new ForbiddenException('No puedes cambiar el email de otro cliente');
     }
 
     this.customerRepository.merge(customer, updateCustomerDto);
-    return this.customerRepository.save(customer);
+    const savedCustomer = await this.customerRepository.save(customer);
+
+    // Sync to User table!
+    const dbUser = await this.usersService.findByEmail(oldEmail);
+    if (dbUser && dbUser.role === UserRole.CLIENT) {
+      const updateData: any = {};
+      if (updateCustomerDto.name) updateData.name = updateCustomerDto.name;
+      if (updateCustomerDto.email) updateData.email = updateCustomerDto.email;
+      if (updateCustomerDto.password) updateData.password = updateCustomerDto.password;
+      await this.usersService.update(dbUser.id, updateData);
+    }
+
+    return savedCustomer;
   }
 
   async remove(id: number, user: AuthenticatedUser): Promise<void> {
     const customer = await this.findOne(id, user);
+    const email = customer.email;
     await this.customerRepository.remove(customer);
+
+    // Sync to User table!
+    const dbUser = await this.usersService.findByEmail(email);
+    if (dbUser && dbUser.role === UserRole.CLIENT) {
+      await this.usersService.remove(dbUser.id);
+    }
   }
 
   private assertCanAccessCustomer(customer: Customer, user: AuthenticatedUser) {

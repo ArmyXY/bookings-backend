@@ -39,179 +39,159 @@ export class SeedService {
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='businesses'");
       await this.paymentRepo.query("DELETE FROM sqlite_sequence WHERE name='users'");
 
-      // 2. Crear Negocios
-      const businesses = await this.businessRepo.save([
-        {
-          name: 'Peluquería Estilo',
-          address: 'Calle Mayor 10, Madrid',
-          phone: '912345678',
-          email: 'info@estilo.com',
-          description: 'Cortes de pelo modernos',
+      // 2. Crear 30 Negocios
+      const businessCategories = [
+        { name: 'Peluquería', services: ['Corte de pelo', 'Tinte', 'Lavado y Peinado', 'Barba'] },
+        { name: 'Dentista', services: ['Limpieza dental', 'Ortodoncia', 'Revisión general', 'Blanqueamiento'] },
+        { name: 'Gimnasio', services: ['Clase Crossfit', 'Entrenamiento personal', 'Evaluación física', 'Yoga'] },
+        { name: 'Fisioterapia', services: ['Masaje terapéutico', 'Rehabilitación', 'Punción seca', 'Sesión de espalda'] },
+        { name: 'Veterinaria', services: ['Vacunación', 'Consulta general', 'Desparasitación', 'Urgencias'] },
+        { name: 'Restaurante', services: ['Reserva de mesa', 'Cena degustación', 'Almuerzo corporativo'] },
+        { name: 'Estética', services: ['Manicura', 'Pedicura', 'Tratamiento facial', 'Depilación'] },
+        { name: 'Taller Mecánico', services: ['Cambio de aceite', 'Revisión ITV', 'Alineación ruedas'] },
+        { name: 'Academia', services: ['Clase de inglés', 'Clase de apoyo', 'Preparación examen'] },
+      ];
+
+      const businessDataList: Partial<Business>[] = [];
+      for (let i = 1; i <= 30; i++) {
+        const cat = businessCategories[(i - 1) % businessCategories.length];
+        businessDataList.push({
+          name: `${cat.name} ${i}`,
+          address: `Calle Comercio ${i}, Ciudad`,
+          phone: `900${String(i).padStart(3, '0')}000`,
+          email: `contacto${i}@negocio${i}.com`,
+          description: `Servicios profesionales de ${cat.name.toLowerCase()} de alta calidad.`,
           openingTime: '09:00',
           closingTime: '20:00',
-        },
-        {
-          name: 'Clínica Dental Salud',
-          address: 'Avenida Libertad 5, Barcelona',
-          phone: '934567890',
-          email: 'contacto@dentalsalud.com',
-          description: 'Tu sonrisa es lo primero',
-          openingTime: '08:30',
-          closingTime: '18:00',
-        },
-        {
-          name: 'Gym Iron',
-          address: 'Calle Fuerza 22, Valencia',
-          phone: '965432109',
-          email: 'gym@iron.com',
-          description: 'Entrenamiento funcional',
-          openingTime: '06:00',
-          closingTime: '23:00',
-        },
-        {
-          name: 'Fisioterapia Relax',
-          address: 'Plaza España 3, Sevilla',
-          phone: '954321098',
-          email: 'relax@fisio.com',
-          description: 'Masajes terapéuticos',
-          openingTime: '10:00',
-          closingTime: '21:00',
-        },
-        {
-          name: 'Veterinaria Mascotas',
-          address: 'Calle Animal 7, Bilbao',
-          phone: '943210987',
-          email: 'vete@mascotas.com',
-          description: 'Cuidado integral animal',
-          openingTime: '09:30',
-          closingTime: '19:30',
-        },
-      ]);
+        });
+      }
+      const businesses = await this.businessRepo.save(businessDataList);
 
-      // 3. Crear Clientes
-      const customers = await this.customerRepo.save([
-        { name: 'Álvaro García', email: 'alvaro@mail.com', phone: '600111222' },
-        { name: 'María López', email: 'maria@mail.com', phone: '600333444' },
-        { name: 'Carlos Ruiz', email: 'carlos@mail.com', phone: '600555666' },
-        { name: 'Lucía Fernández', email: 'lucia@mail.com', phone: '600777888' },
-        { name: 'Elena Martínez', email: 'elena@mail.com', phone: '600999000' },
-      ]);
+      // 3. Crear 200 Clientes
+      const customerDataList: Partial<Customer>[] = [];
+      const firstNames = ['Álvaro', 'María', 'Carlos', 'Lucía', 'Elena', 'Juan', 'Ana', 'Pedro', 'Sofía', 'Luis', 'Laura', 'David', 'Carmen', 'Javier', 'Paula', 'Diego', 'Marta', 'Alejandro', 'Sara', 'Manuel'];
+      const lastNames = ['García', 'López', 'Ruiz', 'Fernández', 'Martínez', 'Sánchez', 'Pérez', 'Gómez', 'Martín', 'Jiménez', 'Hernández', 'Díaz', 'Moreno', 'Muñoz', 'Álvarez', 'Romero', 'Alonso', 'Gutiérrez', 'Torres', 'Domínguez'];
+      
+      for (let i = 1; i <= 200; i++) {
+        const fn = firstNames[(i - 1) % firstNames.length];
+        const ln = lastNames[Math.floor((i - 1) / firstNames.length) % lastNames.length];
+        customerDataList.push({
+          name: `${fn} ${ln} ${i}`,
+          email: `cliente${i}@mail.com`,
+          phone: `600${String(i).padStart(6, '0')}`,
+        });
+      }
+      const customers = await this.customerRepo.save(customerDataList);
 
-      // 3.1. Crear Usuarios para futuro login con nuevos roles
-      await this.userRepo.save([
-        {
-          name: 'Cliente Demo',
-          email: 'cliente@demo.com',
-          passwordHash: await hashPassword('cliente123'),
-          isClient: true,
-          role: UserRole.CLIENT,
-        },
-        {
-          name: 'Administrador Demo',
-          email: 'admin@demo.com',
-          passwordHash: await hashPassword('admin123'),
-          isClient: false,
-          role: UserRole.ADMIN,
-        },
-        {
-          name: 'Business Peluqueria Estilo',
-          email: 'manager@demo.com',
+      // 4. Crear 231 Usuarios (1 admin, 30 managers, 200 clientes)
+      const userDataList: Partial<User>[] = [];
+
+      // 1 Administrador
+      userDataList.push({
+        name: 'Administrador Demo',
+        email: 'admin@demo.com',
+        passwordHash: await hashPassword('admin123'),
+        isClient: false,
+        role: UserRole.ADMIN,
+        businessId: null,
+      });
+
+      // 30 Business Managers
+      for (let i = 1; i <= 30; i++) {
+        userDataList.push({
+          name: `Business Manager ${i}`,
+          email: `manager${i}@demo.com`,
           passwordHash: await hashPassword('manager123'),
           isClient: false,
           role: UserRole.BUSINESS,
-          businessId: businesses[0].id,
-        },
-      ]);
+          businessId: businesses[i - 1].id,
+        });
+      }
 
-      // 4. Crear Reservas (Relacionadas con Negocios y Clientes)
-      const appointments = await this.appointmentRepo.save([
-        {
-          date: '2026-05-20',
-          time: '11:00',
-          status: AppointmentStatus.CONFIRMED,
-          serviceName: 'Corte de Caballero',
-          businessId: businesses[0].id,
-          customerId: customers[0].id,
-        },
-        {
-          date: '2026-05-21',
-          time: '09:30',
-          status: AppointmentStatus.PAID,
-          serviceName: 'Limpieza Dental',
-          businessId: businesses[1].id,
-          customerId: customers[1].id,
-        },
-        {
-          date: '2026-05-22',
-          time: '17:00',
-          status: AppointmentStatus.PENDING,
-          serviceName: 'Clase Crossfit',
-          businessId: businesses[2].id,
-          customerId: customers[2].id,
-        },
-        {
-          date: '2026-05-23',
-          time: '16:00',
-          status: AppointmentStatus.CONFIRMED,
-          serviceName: 'Sesión Espalda',
-          businessId: businesses[3].id,
-          customerId: customers[3].id,
-        },
-        {
-          date: '2026-05-24',
-          time: '12:00',
-          status: AppointmentStatus.PENDING,
-          serviceName: 'Vacunación',
-          businessId: businesses[4].id,
-          customerId: customers[4].id,
-        },
-      ]);
+      // 200 Usuarios Clientes
+      for (let i = 1; i <= 200; i++) {
+        userDataList.push({
+          name: customers[i - 1].name,
+          email: customers[i - 1].email,
+          passwordHash: await hashPassword('cliente123'),
+          isClient: true,
+          role: UserRole.CLIENT,
+          businessId: null,
+        });
+      }
 
-      // 5. Crear Pagos (Relacionados con Reserva, Negocio y Cliente)
-      await this.paymentRepo.save([
-        {
-          amount: 25.0,
-          status: PaymentStatus.COMPLETED,
-          method: PaymentMethod.CARD,
-          appointmentId: appointments[0].id,
-          businessId: businesses[0].id,
-          customerId: customers[0].id,
-        },
-        {
-          amount: 60.0,
-          status: PaymentStatus.COMPLETED,
-          method: PaymentMethod.TRANSFER,
-          appointmentId: appointments[1].id,
-          businessId: businesses[1].id,
-          customerId: customers[1].id,
-        },
-        {
-          amount: 15.0,
-          status: PaymentStatus.PENDING,
-          method: PaymentMethod.CASH,
-          appointmentId: appointments[2].id,
-          businessId: businesses[2].id,
-          customerId: customers[2].id,
-        },
-        {
-          amount: 45.0,
-          status: PaymentStatus.PENDING,
-          method: PaymentMethod.CARD,
-          appointmentId: appointments[3].id,
-          businessId: businesses[3].id,
-          customerId: customers[3].id,
-        },
-        {
-          amount: 30.0,
-          status: PaymentStatus.COMPLETED,
-          method: PaymentMethod.CASH,
-          appointmentId: appointments[4].id,
-          businessId: businesses[4].id,
-          customerId: customers[4].id,
-        },
-      ]);
+      await this.userRepo.save(userDataList);
 
-      return { message: 'Database cleared and seeded with 5 records per table successfully' };
+      // 5. Crear 300 Reservas
+      const appointmentDataList: Partial<Appointment>[] = [];
+      const statuses = [
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.PAID,
+        AppointmentStatus.PENDING,
+        AppointmentStatus.CANCELLED,
+      ];
+
+      for (let i = 1; i <= 300; i++) {
+        // Enlazar de forma balanceada o aleatoria
+        const customer = customers[(i - 1) % customers.length];
+        const businessIndex = (i - 1) % businesses.length;
+        const business = businesses[businessIndex];
+        const cat = businessCategories[businessIndex % businessCategories.length];
+        const service = cat.services[(i - 1) % cat.services.length];
+
+        // Fechas entre junio y julio de 2026
+        const day = String(1 + ((i - 1) % 28)).padStart(2, '0');
+        const month = i % 2 === 0 ? '06' : '07';
+        const dateStr = `2026-${month}-${day}`;
+
+        // Horas entre 09:00 y 19:30
+        const hour = String(9 + ((i - 1) % 11)).padStart(2, '0');
+        const minute = i % 2 === 0 ? '00' : '30';
+        const timeStr = `${hour}:${minute}`;
+
+        appointmentDataList.push({
+          date: dateStr,
+          time: timeStr,
+          status: statuses[(i - 1) % statuses.length],
+          serviceName: service,
+          businessId: business.id,
+          customerId: customer.id,
+        });
+      }
+      const appointments = await this.appointmentRepo.save(appointmentDataList);
+
+      // 6. Crear 300 Pagos vinculados a cada reserva
+      const paymentDataList: Partial<Payment>[] = [];
+      const paymentMethods = [PaymentMethod.CARD, PaymentMethod.CASH, PaymentMethod.TRANSFER];
+
+      for (let i = 1; i <= 300; i++) {
+        const appointment = appointments[i - 1];
+        
+        // Coherencia de estado de pago según estado de reserva
+        let paymentStatus: PaymentStatus;
+        if (appointment.status === AppointmentStatus.PAID) {
+          paymentStatus = PaymentStatus.COMPLETED;
+        } else if (appointment.status === AppointmentStatus.CANCELLED) {
+          paymentStatus = i % 2 === 0 ? PaymentStatus.REFUNDED : PaymentStatus.PENDING;
+        } else {
+          paymentStatus = PaymentStatus.PENDING;
+        }
+
+        // Monto aleatorio realista entre 15.00 y 150.00
+        const amount = parseFloat((15 + ((i * 17) % 136)).toFixed(2));
+
+        paymentDataList.push({
+          amount: amount,
+          status: paymentStatus,
+          method: paymentMethods[(i - 1) % paymentMethods.length],
+          appointmentId: appointment.id,
+          businessId: appointment.businessId,
+          customerId: appointment.customerId,
+        });
+      }
+      await this.paymentRepo.save(paymentDataList);
+
+      return { message: 'Database successfully seeded with 30 businesses, 200 customers, 231 users, 300 appointments, and 300 payments.' };
     } catch (error) {
       console.error('Error seeding database:', error);
       throw error;

@@ -1,7 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Appointment } from '../appointments/appointment.entity';
-import { Payment } from '../payments/payment.entity';
 
 @Entity('businesses')
 export class Business {
@@ -44,6 +43,4 @@ export class Business {
   @OneToMany(() => Appointment, (appointment) => appointment.business)
   appointments: Appointment[];
 
-  @OneToMany(() => Payment, (payment) => payment.business)
-  payments: Payment[];
 }

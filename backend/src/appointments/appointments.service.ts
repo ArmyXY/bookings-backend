@@ -2,7 +2,6 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BusinessesService } from '../businesses/businesses.service';
-import { Customer } from '../customers/customer.entity';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
 import { User, UserRole } from '../users/user.entity';
 import { Appointment } from './appointment.entity';
@@ -18,8 +17,8 @@ export class AppointmentsService {
     private readonly appointmentsRepository: Repository<Appointment>,
     @InjectRepository(Payment)
     private readonly paymentsRepository: Repository<Payment>,
-    @InjectRepository(Customer)
-    private readonly customersRepository: Repository<Customer>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
     private readonly businessesService: BusinessesService,
   ) {}
 
@@ -76,8 +75,6 @@ export class AppointmentsService {
         status: PaymentStatus.PENDING,
         method: paymentMethod,
         appointmentId: savedAppointment.id,
-        businessId: savedAppointment.businessId,
-        customerId: savedAppointment.customerId,
       });
       await this.paymentsRepository.save(payment);
     }
@@ -150,6 +147,14 @@ export class AppointmentsService {
     appointment: Pick<CreateAppointmentDto, 'businessId' | 'customerId'>,
     user: AuthenticatedUser,
   ) {
+    const customer = await this.usersRepository.findOne({
+      where: { id: appointment.customerId },
+    });
+
+    if (!customer || customer.role !== UserRole.CLIENT) {
+      throw new NotFoundException(`Cliente con ID ${appointment.customerId} no encontrado`);
+    }
+
     if (user.role === UserRole.ADMIN) return;
 
     if (user.role === UserRole.BUSINESS) {
@@ -157,11 +162,7 @@ export class AppointmentsService {
       throw new ForbiddenException('No puedes gestionar reservas de otro negocio');
     }
 
-    const customer = await this.customersRepository.findOne({
-      where: { id: appointment.customerId },
-    });
-
-    if (customer?.email === user.email) return;
+    if (customer.email === user.email) return;
     throw new ForbiddenException('No puedes gestionar reservas de otro cliente');
   }
 }

@@ -55,3 +55,51 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 }
+
+@ApiTags('customers')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('customers')
+export class CustomersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Crear un nuevo cliente (Solo ADMIN)' })
+  @ApiResponse({ status: 201, description: 'El cliente ha sido creado exitosamente.', type: User })
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.createClient(createUserDto);
+  }
+
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS)
+  @ApiOperation({ summary: 'Obtener todos los clientes (ADMIN y BUSINESS)' })
+  @ApiResponse({ status: 200, description: 'Retorna todos los clientes existentes.', type: [User] })
+  findAll() {
+    return this.usersService.findClients();
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS, UserRole.CLIENT)
+  @ApiOperation({ summary: 'Obtener un cliente por id' })
+  @ApiResponse({ status: 200, description: 'Retorna el cliente solicitado.', type: User })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS)
+  @ApiOperation({ summary: 'Actualizar un cliente (ADMIN y BUSINESS)' })
+  @ApiResponse({ status: 200, description: 'El cliente ha sido actualizado exitosamente.', type: User })
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateClient(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Eliminar un cliente (Solo ADMIN)' })
+  @ApiResponse({ status: 200, description: 'El cliente ha sido eliminado exitosamente.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.remove(id);
+  }
+}

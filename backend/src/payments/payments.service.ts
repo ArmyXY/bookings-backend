@@ -21,21 +21,21 @@ export class PaymentsService {
   async findAll(user: AuthenticatedUser): Promise<Payment[]> {
     const where =
       user.role === UserRole.BUSINESS
-        ? { businessId: user.businessId ?? -1 }
+        ? { appointment: { businessId: user.businessId ?? -1 } }
         : user.role === UserRole.CLIENT
-          ? { customer: { email: user.email } }
+          ? { appointment: { customer: { email: user.email } } }
           : {};
 
     return this.paymentRepository.find({
       where,
-      relations: ['appointment', 'business', 'customer'],
+      relations: ['appointment', 'appointment.business', 'appointment.customer'],
     });
   }
 
   async findOne(id: number, user?: AuthenticatedUser): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id },
-      relations: ['appointment', 'business', 'customer'],
+      relations: ['appointment', 'appointment.business', 'appointment.customer'],
     });
     if (!payment) {
       throw new NotFoundException(`Pago con ID ${id} no encontrado`);
@@ -60,8 +60,6 @@ export class PaymentsService {
 
     const payment = this.paymentRepository.create({
       ...createPaymentDto,
-      businessId: appointment.businessId,
-      customerId: appointment.customerId,
     });
     const savedPayment = await this.paymentRepository.save(payment);
 
@@ -101,9 +99,9 @@ export class PaymentsService {
   private assertCanAccessPayment(payment: Payment, user: AuthenticatedUser) {
     if (user.role === UserRole.ADMIN) return;
 
-    if (user.role === UserRole.BUSINESS && payment.businessId === user.businessId) return;
+    if (user.role === UserRole.BUSINESS && payment.appointment?.businessId === user.businessId) return;
 
-    if (user.role === UserRole.CLIENT && payment.customer?.email === user.email) return;
+    if (user.role === UserRole.CLIENT && payment.appointment?.customer?.email === user.email) return;
 
     throw new ForbiddenException('No tienes permisos sobre este pago');
   }

@@ -5,7 +5,6 @@ import { hashPassword } from '../auth/password.utils';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserRole } from './user.entity';
-import { Customer } from '../customers/customer.entity';
 
 export type PublicUser = Omit<User, 'passwordHash'>;
 
@@ -14,8 +13,6 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Customer)
-    private readonly customerRepository: Repository<Customer>,
   ) {}
 
   private toPublicUser(user: User): PublicUser {
@@ -33,6 +30,13 @@ export class UsersService {
 
   async findAll(): Promise<PublicUser[]> {
     const users = await this.userRepository.find();
+    return users.map((user) => this.toPublicUser(user));
+  }
+
+  async findClients(): Promise<PublicUser[]> {
+    const users = await this.userRepository.find({
+      where: { role: UserRole.CLIENT },
+    });
     return users.map((user) => this.toPublicUser(user));
   }
 
@@ -66,19 +70,16 @@ export class UsersService {
     });
     const savedUser = await this.userRepository.save(user);
 
-    // Sync to Customer table!
-    if (savedUser.role === UserRole.CLIENT) {
-      const existingCustomer = await this.customerRepository.findOne({ where: { email: savedUser.email } });
-      if (!existingCustomer) {
-        const customer = this.customerRepository.create({
-          name: savedUser.name,
-          email: savedUser.email,
-        });
-        await this.customerRepository.save(customer);
-      }
-    }
-
     return this.toPublicUser(savedUser);
+  }
+
+  async createClient(createUserDto: CreateUserDto): Promise<PublicUser> {
+    return this.create({
+      ...createUserDto,
+      isClient: true,
+      role: UserRole.CLIENT,
+      businessId: undefined,
+    });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
@@ -89,7 +90,6 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
 
-    const oldEmail = user.email;
     const { password, ...userData } = updateUserDto;
     this.userRepository.merge(user, userData);
 
@@ -99,17 +99,16 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Sync to Customer table!
-    if (savedUser.role === UserRole.CLIENT) {
-      const customer = await this.customerRepository.findOne({ where: { email: oldEmail } });
-      if (customer) {
-        if (updateUserDto.name) customer.name = updateUserDto.name;
-        if (updateUserDto.email) customer.email = updateUserDto.email;
-        await this.customerRepository.save(customer);
-      }
-    }
-
     return this.toPublicUser(savedUser);
+  }
+
+  async updateClient(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
+    return this.update(id, {
+      ...updateUserDto,
+      isClient: true,
+      role: UserRole.CLIENT,
+      businessId: undefined,
+    });
   }
 
   async remove(id: number): Promise<void> {
@@ -117,15 +116,6 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
-    const email = user.email;
     await this.userRepository.remove(user);
-
-    // Sync to Customer table!
-    if (user.role === UserRole.CLIENT) {
-      const customer = await this.customerRepository.findOne({ where: { email } });
-      if (customer) {
-        await this.customerRepository.remove(customer);
-      }
-    }
   }
 }

@@ -1,10 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { BusinessesService } from '../businesses/businesses.service';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
 import { User, UserRole } from '../users/user.entity';
-import { Appointment } from './appointment.entity';
+import { Appointment, AppointmentStatus } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
@@ -37,6 +37,22 @@ export class AppointmentsService {
     });
   }
 
+  findAvailability() {
+    return this.appointmentsRepository
+      .createQueryBuilder('appointment')
+      .select(['appointment.businessId', 'appointment.date', 'appointment.time'])
+      .where('appointment.status != :cancelled', { cancelled: AppointmentStatus.CANCELLED })
+      .getRawMany()
+      .then((rows) =>
+        rows.map((row) => ({
+          businessId: row.appointment_businessId,
+          date: row.appointment_date,
+          time: row.appointment_time,
+        })),
+      );
+  }
+
+
   async findOne(id: number, user?: AuthenticatedUser) {
     const appointment = await this.appointmentsRepository.findOne({
       where: { id },
@@ -63,6 +79,20 @@ export class AppointmentsService {
       throw new BadRequestException(
         `La reserva debe estar dentro del horario: ${business.openingTime} - ${business.closingTime}`,
       );
+    }
+
+    // Check for double booking
+    const existing = await this.appointmentsRepository.findOne({
+      where: {
+        businessId: createAppointmentDto.businessId,
+        date: createAppointmentDto.date,
+        time: createAppointmentDto.time,
+        status: Not(AppointmentStatus.CANCELLED),
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Esta hora ya está reservada para este negocio');
     }
 
     const { paymentMethod, ...appointmentDto } = createAppointmentDto;
@@ -101,15 +131,38 @@ export class AppointmentsService {
       user,
     );
 
-    if (updateAppointmentDto.time || updateAppointmentDto.businessId) {
-      const businessId = updateAppointmentDto.businessId || appointment.businessId;
-      const time = updateAppointmentDto.time || appointment.time;
+    if (
+      updateAppointmentDto.time ||
+      updateAppointmentDto.businessId ||
+      updateAppointmentDto.date ||
+      updateAppointmentDto.status
+    ) {
+      const businessId = updateAppointmentDto.businessId ?? appointment.businessId;
+      const date = updateAppointmentDto.date ?? appointment.date;
+      const time = updateAppointmentDto.time ?? appointment.time;
+      const status = updateAppointmentDto.status ?? appointment.status;
+
       const business = await this.businessesService.findOne(businessId);
 
       if (time < business.openingTime || time > business.closingTime) {
         throw new BadRequestException(
           `La reserva debe estar dentro del horario: ${business.openingTime} - ${business.closingTime}`,
         );
+      }
+
+      if (status !== AppointmentStatus.CANCELLED) {
+        const existing = await this.appointmentsRepository.findOne({
+          where: {
+            businessId,
+            date,
+            time,
+            id: Not(id),
+            status: Not(AppointmentStatus.CANCELLED),
+          },
+        });
+        if (existing) {
+          throw new BadRequestException('Esta hora ya está reservada para este negocio');
+        }
       }
     }
 

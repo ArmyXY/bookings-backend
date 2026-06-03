@@ -58,6 +58,7 @@ export class SeedService {
           description: `Servicios profesionales de ${cat.name.toLowerCase()} de alta calidad.`,
           openingTime: '09:00',
           closingTime: '20:00',
+          services: cat.services,
         });
       }
       const businesses = await this.businessRepo.save(businessDataList);

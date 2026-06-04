@@ -38,6 +38,13 @@ export class AppointmentsController {
     return this.appointmentsService.findAll(req.user);
   }
 
+  @Get('availability')
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS, UserRole.CLIENT)
+  @ApiOkResponse({ description: 'Horas ocupadas de todos los negocios (sin datos privados)' })
+  findAvailability() {
+    return this.appointmentsService.findAvailability();
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.BUSINESS, UserRole.CLIENT)
   @ApiOkResponse({ description: 'Detalle de una reserva' })

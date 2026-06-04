@@ -1,5 +1,6 @@
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Appointment } from '../appointments/appointment.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -47,4 +48,7 @@ export class User {
   @ApiProperty()
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Appointment, (appointment) => appointment.customer)
+  appointments: Appointment[];
 }

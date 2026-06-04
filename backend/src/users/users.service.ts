@@ -33,6 +33,13 @@ export class UsersService {
     return users.map((user) => this.toPublicUser(user));
   }
 
+  async findClients(): Promise<PublicUser[]> {
+    const users = await this.userRepository.find({
+      where: { role: UserRole.CLIENT },
+    });
+    return users.map((user) => this.toPublicUser(user));
+  }
+
   async findOne(id: number): Promise<PublicUser> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
@@ -62,7 +69,17 @@ export class UsersService {
       passwordHash: await hashPassword(password),
     });
     const savedUser = await this.userRepository.save(user);
+
     return this.toPublicUser(savedUser);
+  }
+
+  async createClient(createUserDto: CreateUserDto): Promise<PublicUser> {
+    return this.create({
+      ...createUserDto,
+      isClient: true,
+      role: UserRole.CLIENT,
+      businessId: undefined,
+    });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
@@ -81,7 +98,17 @@ export class UsersService {
     }
 
     const savedUser = await this.userRepository.save(user);
+
     return this.toPublicUser(savedUser);
+  }
+
+  async updateClient(id: number, updateUserDto: UpdateUserDto): Promise<PublicUser> {
+    return this.update(id, {
+      ...updateUserDto,
+      isClient: true,
+      role: UserRole.CLIENT,
+      businessId: undefined,
+    });
   }
 
   async remove(id: number): Promise<void> {

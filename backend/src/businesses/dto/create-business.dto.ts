@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, IsArray } from 'class-validator';
 
 export class CreateBusinessDto {
   @ApiProperty({ example: 'Peluquería Estilo' })
@@ -38,4 +38,11 @@ export class CreateBusinessDto {
   @IsNotEmpty()
   @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'closingTime must be in HH:mm format' })
   closingTime: string;
+
+  @ApiProperty({ example: ['Corte de pelo', 'Tinte'], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  services?: string[];
 }
+

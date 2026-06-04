@@ -1,11 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { BusinessesService } from '../businesses/businesses.service';
-import { Customer } from '../customers/customer.entity';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
 import { User, UserRole } from '../users/user.entity';
-import { Appointment } from './appointment.entity';
+import { Appointment, AppointmentStatus } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
@@ -18,8 +17,8 @@ export class AppointmentsService {
     private readonly appointmentsRepository: Repository<Appointment>,
     @InjectRepository(Payment)
     private readonly paymentsRepository: Repository<Payment>,
-    @InjectRepository(Customer)
-    private readonly customersRepository: Repository<Customer>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
     private readonly businessesService: BusinessesService,
   ) {}
 
@@ -37,6 +36,22 @@ export class AppointmentsService {
       order: { date: 'ASC', time: 'ASC' },
     });
   }
+
+  findAvailability() {
+    return this.appointmentsRepository
+      .createQueryBuilder('appointment')
+      .select(['appointment.businessId', 'appointment.date', 'appointment.time'])
+      .where('appointment.status != :cancelled', { cancelled: AppointmentStatus.CANCELLED })
+      .getRawMany()
+      .then((rows) =>
+        rows.map((row) => ({
+          businessId: row.appointment_businessId,
+          date: row.appointment_date,
+          time: row.appointment_time,
+        })),
+      );
+  }
+
 
   async findOne(id: number, user?: AuthenticatedUser) {
     const appointment = await this.appointmentsRepository.findOne({
@@ -66,6 +81,20 @@ export class AppointmentsService {
       );
     }
 
+    // Check for double booking
+    const existing = await this.appointmentsRepository.findOne({
+      where: {
+        businessId: createAppointmentDto.businessId,
+        date: createAppointmentDto.date,
+        time: createAppointmentDto.time,
+        status: Not(AppointmentStatus.CANCELLED),
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Esta hora ya está reservada para este negocio');
+    }
+
     const { paymentMethod, ...appointmentDto } = createAppointmentDto;
     const appointment = this.appointmentsRepository.create(appointmentDto);
     const savedAppointment = await this.appointmentsRepository.save(appointment);
@@ -76,8 +105,6 @@ export class AppointmentsService {
         status: PaymentStatus.PENDING,
         method: paymentMethod,
         appointmentId: savedAppointment.id,
-        businessId: savedAppointment.businessId,
-        customerId: savedAppointment.customerId,
       });
       await this.paymentsRepository.save(payment);
     }
@@ -104,15 +131,38 @@ export class AppointmentsService {
       user,
     );
 
-    if (updateAppointmentDto.time || updateAppointmentDto.businessId) {
-      const businessId = updateAppointmentDto.businessId || appointment.businessId;
-      const time = updateAppointmentDto.time || appointment.time;
+    if (
+      updateAppointmentDto.time ||
+      updateAppointmentDto.businessId ||
+      updateAppointmentDto.date ||
+      updateAppointmentDto.status
+    ) {
+      const businessId = updateAppointmentDto.businessId ?? appointment.businessId;
+      const date = updateAppointmentDto.date ?? appointment.date;
+      const time = updateAppointmentDto.time ?? appointment.time;
+      const status = updateAppointmentDto.status ?? appointment.status;
+
       const business = await this.businessesService.findOne(businessId);
 
       if (time < business.openingTime || time > business.closingTime) {
         throw new BadRequestException(
           `La reserva debe estar dentro del horario: ${business.openingTime} - ${business.closingTime}`,
         );
+      }
+
+      if (status !== AppointmentStatus.CANCELLED) {
+        const existing = await this.appointmentsRepository.findOne({
+          where: {
+            businessId,
+            date,
+            time,
+            id: Not(id),
+            status: Not(AppointmentStatus.CANCELLED),
+          },
+        });
+        if (existing) {
+          throw new BadRequestException('Esta hora ya está reservada para este negocio');
+        }
       }
     }
 
@@ -150,6 +200,14 @@ export class AppointmentsService {
     appointment: Pick<CreateAppointmentDto, 'businessId' | 'customerId'>,
     user: AuthenticatedUser,
   ) {
+    const customer = await this.usersRepository.findOne({
+      where: { id: appointment.customerId },
+    });
+
+    if (!customer || customer.role !== UserRole.CLIENT) {
+      throw new NotFoundException(`Cliente con ID ${appointment.customerId} no encontrado`);
+    }
+
     if (user.role === UserRole.ADMIN) return;
 
     if (user.role === UserRole.BUSINESS) {
@@ -157,11 +215,7 @@ export class AppointmentsService {
       throw new ForbiddenException('No puedes gestionar reservas de otro negocio');
     }
 
-    const customer = await this.customersRepository.findOne({
-      where: { id: appointment.customerId },
-    });
-
-    if (customer?.email === user.email) return;
+    if (customer.email === user.email) return;
     throw new ForbiddenException('No puedes gestionar reservas de otro cliente');
   }
 }

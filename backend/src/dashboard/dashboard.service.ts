@@ -2,16 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
-import { Customer } from '../customers/customer.entity';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
+import { User, UserRole } from '../users/user.entity';
 
 @Injectable()
 export class DashboardService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
-    @InjectRepository(Customer)
-    private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
   ) {}
@@ -25,7 +25,7 @@ export class DashboardService {
 
     // 2. Totales de entidades
     const totalAppointments = await this.appointmentRepository.count();
-    const totalCustomers = await this.customerRepository.count();
+    const totalCustomers = await this.userRepository.count({ where: { role: UserRole.CLIENT } });
 
     // 3. Desglose por estado de reservas
     const appointments = await this.appointmentRepository.find();

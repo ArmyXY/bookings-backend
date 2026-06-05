@@ -1,8 +1,8 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Customer } from '../customers/customer.entity';
 import { Payment } from '../payments/payment.entity';
 import { Business } from '../businesses/business.entity';
+import { User } from '../users/user.entity';
 
 export enum AppointmentStatus {
   PENDING = 'pendiente',
@@ -36,9 +36,9 @@ export class Appointment {
   @Column()
   customerId: number;
 
-  @ManyToOne(() => Customer, (customer) => customer.appointments)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'customerId' })
-  customer: Customer;
+  customer: User;
 
   @OneToMany(() => Payment, (payment) => payment.appointment)
   payments: Payment[];

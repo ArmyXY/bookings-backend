@@ -36,7 +36,7 @@ export class Appointment {
   @Column()
   customerId: number;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.appointments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'customerId' })
   customer: User;
 

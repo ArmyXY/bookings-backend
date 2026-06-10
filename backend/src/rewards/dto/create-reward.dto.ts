@@ -12,10 +12,10 @@ export class CreateRewardDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ example: 'Servicio' })
+  @ApiProperty({ example: 'Servicio', required: false })
   @IsString()
-  @IsNotEmpty()
-  type: string;
+  @IsOptional()
+  type?: string = 'Servicio';
 
   @ApiProperty({ example: 100 })
   @IsNumber()

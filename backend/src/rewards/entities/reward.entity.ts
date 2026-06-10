@@ -17,7 +17,7 @@ export class Reward {
   description: string;
 
   @ApiProperty({ example: 'Servicio' })
-  @Column()
+  @Column({ default: 'Servicio' })
   type: string;
 
   @ApiProperty({ example: 100 })

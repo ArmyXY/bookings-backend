@@ -22,6 +22,13 @@ export class RewardsController {
     return this.rewardsService.createReward(businessId, createRewardDto);
   }
 
+  @Post('business/points')
+  @Roles(UserRole.BUSINESS)
+  @ApiOperation({ summary: 'Empresa añade puntos a cliente' })
+  addPoints(@Request() req, @Body() body: { customerId: number, points: number }) {
+    return this.rewardsService.addPoints(body.customerId, req.user.businessId, body.points);
+  }
+
   @Get('business')
   @Roles(UserRole.BUSINESS)
   @ApiOperation({ summary: 'Empresa obtiene sus recompensas' })

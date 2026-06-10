@@ -52,6 +52,23 @@ export class AppointmentsService {
       );
   }
 
+  async findUnpaid(user: AuthenticatedUser) {
+    if (user.role !== UserRole.BUSINESS) {
+      throw new ForbiddenException('Solo las empresas pueden ver esta lista');
+    }
+
+    // Buscamos reservas de esta empresa con estado diferente a pagado o cancelado, 
+    // o con pagos pendientes.
+    return this.appointmentsRepository.find({
+      where: [
+        { businessId: user.businessId ?? -1, status: AppointmentStatus.PENDING },
+        { businessId: user.businessId ?? -1, status: AppointmentStatus.CONFIRMED },
+      ],
+      relations: ['customer', 'payments'],
+      order: { date: 'DESC', time: 'DESC' },
+    });
+  }
+
 
   async findOne(id: number, user?: AuthenticatedUser) {
     const appointment = await this.appointmentsRepository.findOne({

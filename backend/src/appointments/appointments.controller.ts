@@ -45,6 +45,13 @@ export class AppointmentsController {
     return this.appointmentsService.findAvailability();
   }
 
+  @Get('unpaid')
+  @Roles(UserRole.BUSINESS)
+  @ApiOkResponse({ description: 'Reservas sin pagar de la empresa' })
+  findUnpaid(@Request() req) {
+    return this.appointmentsService.findUnpaid(req.user);
+  }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.BUSINESS, UserRole.CLIENT)
   @ApiOkResponse({ description: 'Detalle de una reserva' })

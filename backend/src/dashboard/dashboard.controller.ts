@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,5 +19,19 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Estadisticas obtenidas correctamente.' })
   getStats() {
     return this.dashboardService.getStats();
+  }
+
+  @Get('business-stats')
+  @Roles(UserRole.BUSINESS)
+  @ApiOperation({ summary: 'Obtener estadisticas de la empresa' })
+  getBusinessStats(@Request() req) {
+    return this.dashboardService.getBusinessStats(req.user.businessId);
+  }
+
+  @Get('client-stats')
+  @Roles(UserRole.CLIENT)
+  @ApiOperation({ summary: 'Obtener estadisticas del cliente' })
+  getClientStats(@Request() req) {
+    return this.dashboardService.getClientStats(req.user.id);
   }
 }

@@ -6,6 +6,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
 import { User, UserRole } from '../users/user.entity';
+import { RewardsService } from '../rewards/rewards.service';
 
 type AuthenticatedUser = Pick<User, 'role' | 'email' | 'businessId'>;
 
@@ -16,6 +17,7 @@ export class PaymentsService {
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async findAll(user: AuthenticatedUser): Promise<Payment[]> {
@@ -67,6 +69,7 @@ export class PaymentsService {
     if (savedPayment.status === PaymentStatus.COMPLETED) {
       appointment.status = AppointmentStatus.PAID;
       await this.appointmentRepository.save(appointment);
+      await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, Number(savedPayment.amount));
     }
 
     return savedPayment;
@@ -85,6 +88,7 @@ export class PaymentsService {
       if (appointment) {
         appointment.status = AppointmentStatus.PAID;
         await this.appointmentRepository.save(appointment);
+        await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, Number(updatedPayment.amount));
       }
     }
 

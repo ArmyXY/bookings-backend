@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
 import { User, UserRole } from '../users/user.entity';
+import { RewardsService } from '../rewards/rewards.service';
 
 @Injectable()
 export class DashboardService {
@@ -14,6 +15,7 @@ export class DashboardService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async getStats() {
@@ -71,6 +73,67 @@ export class DashboardService {
           date: p.createdAt,
         })),
       },
+    };
+  }
+
+  async getBusinessStats(businessId: number) {
+    const appointments = await this.appointmentRepository.find({ where: { businessId } });
+    const payments = await this.paymentRepository.find({
+      where: { appointment: { businessId }, status: PaymentStatus.COMPLETED },
+    });
+
+    const totalRevenue = payments.reduce((acc, p) => acc + Number(p.amount), 0);
+    const totalAppointments = appointments.length;
+
+    // Get unique customers count
+    const uniqueCustomers = new Set(appointments.map((a) => a.customerId));
+
+    const appointmentsByStatus = {
+      pending: appointments.filter((a) => a.status === AppointmentStatus.PENDING).length,
+      confirmed: appointments.filter((a) => a.status === AppointmentStatus.CONFIRMED).length,
+      paid: appointments.filter((a) => a.status === AppointmentStatus.PAID).length,
+      cancelled: appointments.filter((a) => a.status === AppointmentStatus.CANCELLED).length,
+    };
+
+    return {
+      stats: {
+        totalRevenue,
+        totalAppointments,
+        totalCustomers: uniqueCustomers.size,
+      },
+      appointmentsByStatus,
+    };
+  }
+
+  async getClientStats(customerId: number) {
+    const appointments = await this.appointmentRepository.find({ where: { customerId } });
+    const payments = await this.paymentRepository.find({
+      where: { appointment: { customerId }, status: PaymentStatus.COMPLETED },
+    });
+
+    const totalSpent = payments.reduce((acc, p) => acc + Number(p.amount), 0);
+    const totalAppointments = appointments.length;
+
+    const pointsList = await this.rewardsService.getCustomerPoints(customerId);
+    const totalPoints = pointsList.reduce((acc, p) => acc + p.points, 0);
+
+    return {
+      stats: {
+        totalSpent,
+        totalAppointments,
+        totalPoints,
+      },
+      pointsByBusiness: pointsList.map((p) => ({
+        businessId: p.businessId,
+        businessName: p.business?.name,
+        points: p.points,
+      })),
+      recentAppointments: appointments.slice(-5).map(a => ({
+        id: a.id,
+        service: a.serviceName,
+        date: a.date,
+        status: a.status,
+      })),
     };
   }
 }

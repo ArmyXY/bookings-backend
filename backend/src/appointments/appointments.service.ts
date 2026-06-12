@@ -195,7 +195,8 @@ export class AppointmentsService {
         );
       }
 
-      if (status !== AppointmentStatus.CANCELLED) {
+      const newStatus = updateAppointmentDto.status ?? appointment.status;
+      if (newStatus !== AppointmentStatus.CANCELLED) {
         const existing = await this.appointmentsRepository.findOne({
           where: {
             businessId,

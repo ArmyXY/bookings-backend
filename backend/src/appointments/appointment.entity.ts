@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Payment } from '../payments/payment.entity';
 import { Business } from '../businesses/business.entity';
 import { User } from '../users/user.entity';
+import { ColumnNumericTransformer } from '../utils/column-numeric-transformer';
 
 export enum AppointmentStatus {
   PENDING = 'pendiente',
@@ -54,4 +55,14 @@ export class Appointment {
   @ApiProperty({ example: 'Corte de pelo' })
   @Column()
   serviceName: string;
+
+  @ApiProperty({ example: 25.0 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+    default: 0
+  })
+  price: number;
 }

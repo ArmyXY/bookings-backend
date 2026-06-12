@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reward } from './entities/reward.entity';
@@ -8,6 +8,8 @@ import { CreateRewardDto } from './dto/create-reward.dto';
 
 @Injectable()
 export class RewardsService {
+  private readonly logger = new Logger(RewardsService.name);
+
   constructor(
     @InjectRepository(Reward)
     private readonly rewardRepository: Repository<Reward>,
@@ -15,7 +17,7 @@ export class RewardsService {
     private readonly customerPointsRepository: Repository<CustomerPoints>,
     @InjectRepository(RedeemedReward)
     private readonly redeemedRewardRepository: Repository<RedeemedReward>,
-  ) {}
+  ) { }
 
   async createReward(businessId: number, dto: CreateRewardDto) {
     const reward = this.rewardRepository.create({
@@ -26,13 +28,17 @@ export class RewardsService {
   }
 
   async getBusinessRewards(businessId: number) {
-    return this.rewardRepository.find({ where: { businessId } });
+    return this.rewardRepository.find({ where: { businessId }, relations: ['business'] });
+  }
+
+  async getAllRewards() {
+    return this.rewardRepository.find({ relations: ['business'] });
   }
 
   async getCustomerPoints(customerId: number) {
-    return this.customerPointsRepository.find({ 
+    return this.customerPointsRepository.find({
       where: { customerId },
-      relations: ['business'] 
+      relations: ['business']
     });
   }
 
@@ -42,7 +48,9 @@ export class RewardsService {
       cp = this.customerPointsRepository.create({ customerId, businessId, points: 0 });
     }
     cp.points += points;
-    return this.customerPointsRepository.save(cp);
+    const saved = await this.customerPointsRepository.save(cp);
+    this.logger.log(`Cliente ${customerId} ahora tiene ${saved.points} puntos en el negocio ${businessId} (+${points})`);
+    return saved;
   }
 
   async redeemReward(customerId: number, rewardId: number) {
@@ -64,7 +72,9 @@ export class RewardsService {
       rewardId,
       isUsed: false,
     });
-    return this.redeemedRewardRepository.save(redeemed);
+    const saved = await this.redeemedRewardRepository.save(redeemed);
+    this.logger.log(`Cliente ${customerId} ha canjeado recompensa ${reward.id} (coste: ${reward.pointsCost} pts). Quedan ${cp.points} puntos.`);
+    return saved;
   }
 
   async getRedeemedRewards(customerId: number) {

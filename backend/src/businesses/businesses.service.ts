@@ -16,15 +16,25 @@ export class BusinessesService {
   ) {}
 
   async findAll(): Promise<Business[]> {
-    return this.businessRepository.find();
+    const businesses = await this.businessRepository.find({ relations: ['services'] });
+    return businesses.map(b => ({
+      ...b,
+      services: b.services ? (b.services.map(s => s.name) as any) : [],
+    }));
   }
 
   async findOne(id: number): Promise<Business> {
-    const business = await this.businessRepository.findOne({ where: { id } });
+    const business = await this.businessRepository.findOne({ 
+      where: { id },
+      relations: ['services']
+    });
     if (!business) {
       throw new NotFoundException(`Business with ID ${id} not found`);
     }
-    return business;
+    return {
+      ...business,
+      services: business.services ? (business.services.map(s => s.name) as any) : [],
+    };
   }
 
   async create(createBusinessDto: CreateBusinessDto): Promise<Business> {

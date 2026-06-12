@@ -1,10 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { BusinessesService } from '../businesses/businesses.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { Payment, PaymentStatus } from '../payments/payment.entity';
 import { User, UserRole } from '../users/user.entity';
 import { Appointment, AppointmentStatus } from './appointment.entity';
+import { Service } from '../services/service.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
@@ -12,6 +14,8 @@ type AuthenticatedUser = Pick<User, 'role' | 'email' | 'businessId'>;
 
 @Injectable()
 export class AppointmentsService {
+  private readonly logger = new Logger(AppointmentsService.name);
+
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepository: Repository<Appointment>,
@@ -19,8 +23,11 @@ export class AppointmentsService {
     private readonly paymentsRepository: Repository<Payment>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(Service)
+    private readonly servicesRepository: Repository<Service>,
     private readonly businessesService: BusinessesService,
-  ) {}
+    private readonly rewardsService: RewardsService,
+  ) { }
 
   findAll(user: AuthenticatedUser) {
     const where =
@@ -98,6 +105,23 @@ export class AppointmentsService {
       );
     }
 
+    // Buscamos el servicio para asignar el precio correcto
+    const service = await this.servicesRepository.findOne({
+      where: {
+        name: createAppointmentDto.serviceName,
+        businessId: createAppointmentDto.businessId,
+      },
+    });
+
+    if (!service) {
+      this.logger.error(`Intento de reserva de un servicio inexistente: ${createAppointmentDto.serviceName}`);
+      throw new BadRequestException(`El servicio '${createAppointmentDto.serviceName}' no existe.`);
+    }
+
+    if (service.price <= 0) {
+      this.logger.warn(`Creando reserva para un servicio con precio 0 o negativo: ${service.name}`);
+    }
+
     // Check for double booking
     const existing = await this.appointmentsRepository.findOne({
       where: {
@@ -113,17 +137,21 @@ export class AppointmentsService {
     }
 
     const { paymentMethod, ...appointmentDto } = createAppointmentDto;
-    const appointment = this.appointmentsRepository.create(appointmentDto);
+    const appointment = this.appointmentsRepository.create({
+      ...appointmentDto,
+      price: service.price,
+    });
     const savedAppointment = await this.appointmentsRepository.save(appointment);
 
     if (paymentMethod) {
       const payment = this.paymentsRepository.create({
-        amount: 0,
+        amount: service.price,
         status: PaymentStatus.PENDING,
         method: paymentMethod,
         appointmentId: savedAppointment.id,
       });
       await this.paymentsRepository.save(payment);
+      this.logger.log(`Creado pago pendiente por ${service.price}€ para la reserva ${savedAppointment.id}`);
     }
 
     return this.findOne(savedAppointment.id, user);
@@ -184,8 +212,20 @@ export class AppointmentsService {
     }
 
     const { paymentMethod: _paymentMethod, ...appointmentDto } = updateAppointmentDto;
+    
+    const oldStatus = appointment.status;
     const updatedAppointment = this.appointmentsRepository.merge(appointment, appointmentDto);
     const savedAppointment = await this.appointmentsRepository.save(updatedAppointment);
+    const newStatus = savedAppointment.status;
+
+    // Otorgar 10 puntos si pasa de pendiente/cancelado a confirmado/completado
+    if (
+      (oldStatus === AppointmentStatus.PENDING || oldStatus === AppointmentStatus.CANCELLED) &&
+      (newStatus === AppointmentStatus.CONFIRMED || newStatus === AppointmentStatus.PAID)
+    ) {
+      await this.rewardsService.addPoints(savedAppointment.customerId, savedAppointment.businessId, 10);
+      this.logger.log(`Añadidos 10 puntos al cliente ${savedAppointment.customerId} por cambio de estado a ${newStatus}`);
+    }
 
     return this.findOne(savedAppointment.id, user);
   }

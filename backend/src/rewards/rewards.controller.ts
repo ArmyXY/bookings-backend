@@ -43,6 +43,13 @@ export class RewardsController {
     return this.rewardsService.getBusinessRewards(+businessId);
   }
 
+  @Get('all')
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Obtener todas las recompensas de todos los negocios' })
+  getAllRewards() {
+    return this.rewardsService.getAllRewards();
+  }
+
   @Get('my-points')
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Cliente obtiene sus puntos' })

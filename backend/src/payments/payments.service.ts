@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './payment.entity';
@@ -12,13 +12,15 @@ type AuthenticatedUser = Pick<User, 'role' | 'email' | 'businessId'>;
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
     private readonly rewardsService: RewardsService,
-  ) {}
+  ) { }
 
   async findAll(user: AuthenticatedUser): Promise<Payment[]> {
     const where =
@@ -69,7 +71,10 @@ export class PaymentsService {
     if (savedPayment.status === PaymentStatus.COMPLETED) {
       appointment.status = AppointmentStatus.PAID;
       await this.appointmentRepository.save(appointment);
-      await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, Number(savedPayment.amount));
+      
+      const pointsToAdd = 10;
+      await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, pointsToAdd);
+      this.logger.log(`Añadidos ${pointsToAdd} puntos automáticos al cliente ${appointment.customerId} por completar la reserva ${appointment.id}`);
     }
 
     return savedPayment;
@@ -78,7 +83,7 @@ export class PaymentsService {
   async update(id: number, updatePaymentDto: UpdatePaymentDto, user: AuthenticatedUser): Promise<Payment> {
     const payment = await this.findOne(id, user);
     const oldStatus = payment.status;
-    
+
     this.paymentRepository.merge(payment, updatePaymentDto);
     const updatedPayment = await this.paymentRepository.save(payment);
 
@@ -88,7 +93,10 @@ export class PaymentsService {
       if (appointment) {
         appointment.status = AppointmentStatus.PAID;
         await this.appointmentRepository.save(appointment);
-        await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, Number(updatedPayment.amount));
+        
+        const pointsToAdd = 10;
+        await this.rewardsService.addPoints(appointment.customerId, appointment.businessId, pointsToAdd);
+        this.logger.log(`Añadidos ${pointsToAdd} puntos automáticos al cliente ${appointment.customerId} por actualización de reserva a completado`);
       }
     }
 

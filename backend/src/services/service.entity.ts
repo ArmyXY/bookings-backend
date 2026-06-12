@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Business } from '../businesses/business.entity';
+import { ColumnNumericTransformer } from '../utils/column-numeric-transformer';
 
 @Entity('services')
 export class Service {
@@ -24,7 +25,12 @@ export class Service {
   description: string;
 
   @ApiProperty({ example: 25.0 })
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+  })
   price: number;
 
   @ApiProperty({ example: 45, description: 'Duración estimada en minutos', required: false })

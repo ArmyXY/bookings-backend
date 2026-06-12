@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Appointment } from '../appointments/appointment.entity';
+import { ColumnNumericTransformer } from '../utils/column-numeric-transformer';
 
 export enum PaymentStatus {
   PENDING = 'pendiente',
@@ -21,7 +22,12 @@ export class Payment {
   id: number;
 
   @ApiProperty({ example: 50.0 })
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+  })
   amount: number;
 
   @ApiProperty({ enum: PaymentStatus, example: PaymentStatus.PENDING })
